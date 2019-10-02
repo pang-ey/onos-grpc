@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+// option java_multiple_files = true;
+option java_package = "com.winlab.panggrpcserver";
+option java_outer_classname = "PGrpcServer";
+
+
+package panggrpcserver;
+
+service PangGrpcServer {
+    rpc EvpnRoute (Request) returns (Reply) {}
+}
+
+message Request {
+    string message = 1;
+}
+
+message Reply {
+    string message = 1;
+}

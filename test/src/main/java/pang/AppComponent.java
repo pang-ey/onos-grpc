@@ -16,64 +16,88 @@
 package pang;
 
 import com.google.common.collect.ImmutableSet;
-import org.onosproject.cfg.ComponentConfigService;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
-import org.osgi.service.component.annotations.Modified;
-import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Dictionary;
-import java.util.Properties;
+import io.grpc.Server;
+import io.grpc.netty.NettyServerBuilder;
+import io.grpc.stub.StreamObserver;
+
+import java.io.IOException;
+import pang.OnosRequest;
 
 import static org.onlab.util.Tools.get;
 
-/**
- * Skeletal ONOS application component.
- */
-@Component(immediate = true,
-           service = {SomeInterface.class},
-           property = {
-               "someProperty=Some Default String Value",
-           })
-public class AppComponent implements SomeInterface {
+@Component(immediate = true)
+public class AppComponent {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    /** Some configurable property. */
-    private String someProperty;
-
-    @Reference(cardinality = ReferenceCardinality.MANDATORY)
-    protected ComponentConfigService cfgService;
+    OnosServer server;
 
     @Activate
     protected void activate() {
-        cfgService.registerProperties(getClass());
+        log.info("activate");
+
+        try {
+            server = new OnosServer();
+            server.start();
+            //server.blockUntilShutdown();
+        } catch (IOException e) {
+            log.warn("Failed to start gRPC server: {}", e);
+        }
+
         log.info("Started");
     }
 
     @Deactivate
     protected void deactivate() {
-        cfgService.unregisterProperties(getClass(), false);
         log.info("Stopped");
     }
 
-    @Modified
-    public void modified(ComponentContext context) {
-        Dictionary<?, ?> properties = context != null ? context.getProperties() : new Properties();
-        if (context != null) {
-            someProperty = get(properties, "someProperty");
+    private class OnosServer {
+
+        private int port = 50051;
+        private Server server;
+
+        private void start() throws IOException {
+            log.info("OnosServer start");
+
+            server = NettyServerBuilder.forPort(port)
+                    .addService(new OnosServerImpl())
+                    .build()
+                    .start();
+
+            log.info("Server started, listening on " + port);
         }
-        log.info("Reconfigured");
-    }
 
-    @Override
-    public void someMethod() {
-        log.info("Invoked");
-    }
+        private void stop() {
+            if (server != null) {
+                server.shutdown();
+            }
+        }
 
+        /**
+         * Await termination on the main thread since the grpc library uses daemon threads.
+         */
+        private void blockUntilShutdown() throws InterruptedException {
+            if (server != null) {
+                server.awaitTermination();
+            }
+        }
+
+
+        private class OnosServerImpl extends OnosServerGrpc.OnosServerImplBase {
+            public void evpnRoute(OnosRequest req, StreamObserver<OnosReply> responseObserver) {
+                log.info("Request: {}", req.getMessage());
+                OnosReply reply = OnosReply.newBuilder().setMessage(("Hello: " + req.getMessage())).build();
+                responseObserver.onNext(reply);
+                responseObserver.onCompleted();
+            }
+        }
+    }
 }
