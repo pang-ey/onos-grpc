@@ -13,66 +13,67 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package pang;
+package com.winlab.panggrpcserver;
 
 import com.google.common.collect.ImmutableSet;
+import org.onosproject.cfg.ComponentConfigService;
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Dictionary;
+import java.util.Properties;
+import java.io.IOException;
 
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.stub.StreamObserver;
 
-import java.io.IOException;
-import pang.OnosRequest;
-
-import static org.onlab.util.Tools.get;
+//import com.winlab.grpcserver.PGrpcServer;
+//import com.winlab.grpcserver.Reply;
+//import com.winlab.grpcserver.Request;
+import com.winlab.panggrpcserver.PGrpcServer;
 
 @Component(immediate = true)
 public class AppComponent {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    OnosServer server;
+    private PangGrpcServer server;
 
     @Activate
     protected void activate() {
-        log.info("activate");
-
         try {
-            server = new OnosServer();
-            server.start();
-            //server.blockUntilShutdown();
+            server = new PangGrpcServer();
+//            server.start();
         } catch (IOException e) {
-            log.warn("Failed to start gRPC server: {}", e);
+            log.warn("Failed to start grpc server: {}", e);
         }
 
-        log.info("Started");
+        log.info("Pang grpc server Started");
     }
 
     @Deactivate
     protected void deactivate() {
+//        server.stop();
         log.info("Stopped");
     }
 
-    private class OnosServer {
-
-        private int port = 50052;
+    private class PangGrpcServer {
+        private int port = 2222;
         private Server server;
 
         private void start() throws IOException {
-            log.info("OnosServer start");
-
             server = NettyServerBuilder.forPort(port)
-                    .addService(new OnosServerImpl())
+//                    .addService(new PangGrpcServerImpl())
                     .build()
                     .start();
 
-            log.info("Server started, listening on " + port);
+            log.info("server started");
         }
 
         private void stop() {
@@ -81,23 +82,19 @@ public class AppComponent {
             }
         }
 
-        /**
-         * Await termination on the main thread since the grpc library uses daemon threads.
-         */
         private void blockUntilShutdown() throws InterruptedException {
             if (server != null) {
                 server.awaitTermination();
             }
         }
 
-
-        private class OnosServerImpl extends OnosServerGrpc.OnosServerImplBase {
-            public void evpnRoute(OnosRequest req, StreamObserver<OnosReply> responseObserver) {
-                log.info("Request: {}", req.getMessage());
-                OnosReply reply = OnosReply.newBuilder().setMessage(("Hello: " + req.getMessage())).build();
-                responseObserver.onNext(reply);
-                responseObserver.onCompleted();
-            }
-        }
+//        private class PGrpcServerImpl extends PGrpcServer.PGrpcServerImplBase {
+//            public void evpnRoute(Request req, StreamObserver<Reply> responseObserver) {
+//                log.info("Request: {}", req.getName());
+//                Reply reply = Reply.newBuilder().setMessage(("Hello: " + req.getName())).build();
+//                responseObserver.onNext(reply);
+//                responseObserver.onCompleted();
+//            }
+//        }
     }
 }

@@ -5,9 +5,9 @@ option java_package = "com.winlab.panggrpcserver";
 option java_outer_classname = "PGrpcServer";
 
 
-package panggrpcserver;
+package grpcserver;
 
-service PangGrpcServer {
+service GrpcServer {
     rpc EvpnRoute (Request) returns (Reply) {}
 }
 
