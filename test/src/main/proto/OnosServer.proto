@@ -1,10 +1,9 @@
 syntax = "proto3";
 
-option java_multiple_files = true;
-// option java_package = "com.winlab.onosserver";
+// option java_multiple_files = true;
+option go_package = "pang";
 // option java_outer_classname = "PangGrpcServer";
 option java_generic_services = true;
-option go_package = "com/pang";
 
 package pang;
 // package grpcserver;
